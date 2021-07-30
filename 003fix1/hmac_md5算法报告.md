@@ -10,7 +10,7 @@
       - [总控流程](#总控流程)
       - [压缩函数 $H_{MD5}$](#压缩函数-h_md5)
         - [轮函数 $F, G, H, I$](#轮函数-f-g-h-i)
-          - [X表](#x表)
+          - [X 表](#x-表)
           - [T 表](#t-表)
           - [S 表](#s-表)
     - [HMAC 算法](#hmac-算法)
@@ -21,7 +21,7 @@
   - [模块分解](#模块分解)
     - [MD5](#md5-2)
     - [HMAC](#hmac-1)
-  - [C语言代码](#c语言代码)
+  - [C 语言代码](#c-语言代码)
     - [md5.c](#md5c)
     - [hmac-md5.c](#hmac-md5c)
     - [md5test.c](#md5testc)
@@ -29,7 +29,8 @@
   - [验证用例](#验证用例)
 
 > 代码和报告更新说明：
-> - 对 md5.c 代码169行和报告相关部分相关更新，避免了动态内存越界报错的问题，如下图：
+>
+> - 对 md5.c 代码 169 行和报告相关部分相关更新，避免了动态内存越界报错的问题，如下图：
 > - ![相关更新](./update.png)
 
 ## 原理概述
@@ -42,7 +43,7 @@
 
 #### 总控流程
 
-- 以512-bit 消息分组为单位，每一分组 $Y_q (q = 0, 1, …, L-1)$ 经过4个循环的压缩算法，表示为
+- 以 512-bit 消息分组为单位，每一分组 $Y_q (q = 0, 1, …, L-1)$ 经过 4 个循环的压缩算法，表示为
 
 $$
 \begin{aligned}
@@ -59,9 +60,9 @@ $$
 
 #### 压缩函数 $H_{MD5}$
 
-- $H_{MD5}$ 从 $CV$ 输入128位，从消息分组输入512位，完成4轮循环后，输出128位，作为用于下一轮输入的 $CV$ 值。
-- 每轮循环分别固定不同的生成函数 $F, G, H, I$，结合指定的 T 表元素 T[] 和消息分组的不同部分 X[] 做16次迭代运算，生成下一轮循环的输入。
-- 4轮循环共有64次迭代运算。
+- $H_{MD5}$ 从 $CV$ 输入 128 位，从消息分组输入 512 位，完成 4 轮循环后，输出 128 位，作为用于下一轮输入的 $CV$ 值。
+- 每轮循环分别固定不同的生成函数 $F, G, H, I$，结合指定的 T 表元素 T[] 和消息分组的不同部分 X[] 做 16 次迭代运算，生成下一轮循环的输入。
+- 4 轮循环共有 64 次迭代运算。
 
 流程如下图：
 
@@ -69,48 +70,52 @@ $$
 
 ##### 轮函数 $F, G, H, I$
 
-> 4轮循环中使用的生成函数 g (也称**轮函数**) 是一个32位非线性逻辑函数。同一轮循环的所有迭代使用相同的 g 函数，而各轮循环对应的 g 函数具有不同的定义，具体如下：
+> 4 轮循环中使用的生成函数 g (也称**轮函数**) 是一个 32 位非线性逻辑函数。同一轮循环的所有迭代使用相同的 g 函数，而各轮循环对应的 g 函数具有不同的定义，具体如下：
 
-| 轮次  |      g       |            $g(b, c, d)$             |
-| :---: | :----------: | :---------------------------------: |
-|   1   | $F(b, c, d)$ | $(b \land c) \lor (\neg b \land d)$ |
-|   2   | $G(b, c, d)$ | $(b \land c) \lor (c \land \neg d)$ |
-|   3   | $H(b, c, d)$ |        $b \oplus c \oplus d$        |
-|   4   | $I(b, c, d)$ |     $c \oplus (b \lor \neg d)$      |
+| 轮次 |      g       |            $g(b, c, d)$             |
+| :--: | :----------: | :---------------------------------: |
+|  1   | $F(b, c, d)$ | $(b \land c) \lor (\neg b \land d)$ |
+|  2   | $G(b, c, d)$ | $(b \land c) \lor (c \land \neg d)$ |
+|  3   | $H(b, c, d)$ |        $b \oplus c \oplus d$        |
+|  4   | $I(b, c, d)$ |     $c \oplus (b \lor \neg d)$      |
 
 每轮循环中的一次迭代运算逻辑
+
 1. 对 A 迭代：$a \leftarrow b + ((a + g(b, c, d) + X[k] + T[i]) <<< s)$
 2. 对缓冲区：$(B, C, D, A) \leftarrow (A, B, C, D)$
 
 > - $a, b, c, d$：MD 缓冲区 $(A, B, C, D)$ 的各个寄存器的当前值
 > - $g$：轮函数 $F, G, H, I$ 中的一个
-> - $<<< s$：将32位输入循环左移 (CLS) $s$ 位；$s$ 为规定值
-> - $X[k]$：当前处理消息分组 $q$ 的第 k 个 $(k = 0 \dots 15)$ 32位字。如果消息 M 按 32-bit 编址，即为 $M_{q \times 16 + k}$
-> - $T[i]$： T 表的第 i 个元素，32位字；T 表总共有64个元素，也称为加法常数
+> - $<<< s$：将 32 位输入循环左移 (CLS) $s$ 位；$s$ 为规定值
+> - $X[k]$：当前处理消息分组 $q$ 的第 k 个 $(k = 0 \dots 15)$ 32 位字。如果消息 M 按 32-bit 编址，即为 $M_{q \times 16 + k}$
+> - $T[i]$： T 表的第 i 个元素，32 位字；T 表总共有 64 个元素，也称为加法常数
 > - $+$： 模 $2^{32}$ 加法
 
 一次迭代流程如图：
 
 ![轮函数](./轮函数.png)
 
-###### X表
+###### X 表
 
-> 四轮循环，16次迭代，合计64次
+> 四轮循环，16 次迭代，合计 64 次
 
 在每轮循环第 i 次迭代$(i = 0 \dots 15)$中，$X[k]$ 的选择如下：
-- 第1轮迭代：$k = i$
-- 第2轮迭代：$k = (1 + 5i) \mod 16$
-- 第3轮迭代：$k = (5 + 3i) \mod 16$
-- 第4轮迭代：$k = 7j \mod 16$
+
+- 第 1 轮迭代：$k = i$
+- 第 2 轮迭代：$k = (1 + 5i) \mod 16$
+- 第 3 轮迭代：$k = (5 + 3i) \mod 16$
+- 第 4 轮迭代：$k = 7j \mod 16$
 
 ###### T 表
 
 T 表生成函数：
+
 $$
 \begin{aligned}
   & T[i] = \rm{int} (2^{32} \times | \sin(i) |)
 \end{aligned}
 $$
+
 - $int$ 取整函数
 - $\sin$ 正弦函数
 - $i$ 弧度
@@ -122,9 +127,9 @@ $$
 $$
 \begin{aligned}
   S[0 \dots 15] & = \{ 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22 \} \\
-  S[16 \dots 31] & = \{ 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20 \} \\ 
-  S[32 \dots 47] & = \{ 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23 \} \\ 
-  S[48 \dots 63] & = \{ 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21 \} \\ 
+  S[16 \dots 31] & = \{ 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20 \} \\
+  S[32 \dots 47] & = \{ 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23 \} \\
+  S[48 \dots 63] & = \{ 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21 \} \\
 \end{aligned}
 $$
 
@@ -139,20 +144,21 @@ $$
 > - **b** – length (bits) of input block
 > - **k** – secrete key, |k| < b
 > - **n** – length of hash code
-> - *ipad* – 00110110 (0x36) 重复 b/8 次
-> - *opad* – 01011100 (0x5c) 重复 b/8 次
+> - _ipad_ – 00110110 (0x36) 重复 b/8 次
+> - _opad_ – 01011100 (0x5c) 重复 b/8 次
 
-1. 对共享密钥 k 右边进行补0，生成一个**64字节**的数据块 $K^+$
-2. $K^+$ 与 $ipad$ 进行异或，生成64字节的 $S_i$
-3.  $(S_i \parallel M)$ 进行 hash 压缩 (例如 MD5)，得到 $H(S_i \parallel M)$
-4.  $K^+$ 与 $opad$ 进行异或，生成64字节的 $S_o$
-5.  对 $S_o \parallel H(S_i \parallel M)$ 进行 hash 压缩 (例如 MD5)，得到 $HMAC_K = H(S_o \parallel H(S_i \parallel M))$
+1. 对共享密钥 k 右边进行补 0，生成一个**64 字节**的数据块 $K^+$
+2. $K^+$ 与 $ipad$ 进行异或，生成 64 字节的 $S_i$
+3. $(S_i \parallel M)$ 进行 hash 压缩 (例如 MD5)，得到 $H(S_i \parallel M)$
+4. $K^+$ 与 $opad$ 进行异或，生成 64 字节的 $S_o$
+5. 对 $S_o \parallel H(S_i \parallel M)$ 进行 hash 压缩 (例如 MD5)，得到 $HMAC_K = H(S_o \parallel H(S_i \parallel M))$
 
 > $\parallel$ 代表字符串拼接
 
 ## 总体结构设计
 
 该项目分成三个文件，如下：
+
 - md5.c ：MD5 算法文件
 - hamc-md5.c ：HMAC_MD5 算法文件
 - md5test.c ：用于测试 MD5 算法的测试文件
@@ -162,6 +168,7 @@ $$
 ### MD5
 
 函数和数据结构设计如下：
+
 ```cpp
 #define F(b, c, d) ((b & c) | (~b & d))        // 第一轮
 #define G(b, c, d) ((b & d) | (c & ~d))        // 第二轮
@@ -228,6 +235,7 @@ unsigned char *messagePaddingTmp;
 ### HMAC
 
 相关声明如下：
+
 ```cpp
 #define BLOCKSIZE 64
 
@@ -248,6 +256,7 @@ char *So;                  // K+ ^ opad
 ### MD5
 
 具体函数声明如下：
+
 ```cpp
 /**
  * 初始化向量
@@ -298,6 +307,7 @@ void clear();
 ```
 
 其中主要函数 `MD5()` 具体代码如下：
+
 ```cpp
 MD5_CTX MD5(char *originMessage, unsigned long messageLength)
 {
@@ -323,6 +333,7 @@ MD5_CTX MD5(char *originMessage, unsigned long messageLength)
 ### HMAC
 
 相关函数声明如下：
+
 ```cpp
 /**
  * 获取文件的大小，并设置初始的相关值
@@ -353,7 +364,7 @@ MD5_CTX Hash(unsigned char *S, unsigned long SLength, unsigned char *M, unsigned
 void freeAll();
 ```
 
-## C语言代码
+## C 语言代码
 
 ### md5.c
 
@@ -869,12 +880,14 @@ int main(int argc, char *argv[])
 ## 编译运行结果
 
 运行环境为 win10 环境下的 wsl （ubuntu 18.04）：
+
 ```bash
 root@LAPTOP-QTCGESHO:/mnt/d/blog/work/信息安全/003fix1# uname -a
 Linux LAPTOP-QTCGESHO 4.4.0-19041-Microsoft #488-Microsoft Mon Sep 01 13:43:00 PST 2020 x86_64 x86_64 x86_64 GNU/Linux
 ```
 
 采用 makefile 进行简化操作，makefile 具体代码如下：
+
 ```makefile
 GCC := gcc 								# 编译器
 HMAC-MD5 := ./hmac-md5.c 	# hmac-md5 语言源代码
@@ -902,12 +915,13 @@ md5: ${MD5TEST} ${MD5}
 	@${GCC} ${MD5TEST} -o $@
 
 # 清空垃圾文件
-clean: 
+clean:
 	@rm md5 || exit 0
 	@rm hmac-md5  || exit 0
 ```
 
 测试文件（input.txt）文本为
+
 ```txt
 My name is mijialong.
 This is SYSU.
@@ -921,6 +935,7 @@ MD5 测试运行结果为
 ![MD5 test](./mtest.png)
 
 密钥文件（key.txt）文本为
+
 ```txt
 this is a key
 ```

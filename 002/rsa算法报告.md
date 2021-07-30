@@ -20,10 +20,12 @@
 ## 原理描述
 
 主要原理：**欧拉定理**
+
 > 对于互素的 a 和 m ，有 $a^{\varphi(m)} \equiv 1 \ ({\rm mod} \ m)$
 
 对于
-- 满足$N = pq$的两个不同的素数 p 和 q 
+
+- 满足$N = pq$的两个不同的素数 p 和 q
 - 满足 $0<n<N$ 的整数 n, k 是正整数，有 $n^{k \varphi(N) + 1} \equiv n \ ({\rm mod} \ N)$
 
 由于 $ed \equiv 1 \ ({\rm mod} \ \varphi(N))$，即 $ed = k \varphi(N) + 1$，所以 $n^{ed} = n^{k \varphi(N) + 1} \equiv n \ ({\rm mod} \ N)$
@@ -37,6 +39,7 @@
 > 本次使用了 gmp 库作为大数运算的依据
 
 具体的变量和函数声明如下：
+
 ```cpp
 #include <stdio.h>
 #include <gmp.h>
@@ -150,6 +153,7 @@ void decryption(char privateKeyFilePath[], char encryptedFilePath[],
 - 得到公钥 (n, e) 和私钥 (n, d)
 
 具体源代码如下：
+
 ```cpp
 /**
  * 生成 p, q, n, phi(n), e 等参数
@@ -214,12 +218,14 @@ void generateKey(int bit)
 ```
 
 ## 解编码
+
 > 根据公私钥中的 n ，获得 n 的字节数 k
 
 - 构建 PS ，长度为 k - mLen - 3，其中每个字节都是值都是 1 ~ 255 的随机数
 - 构建 EM = 0x00 || 0x02 || PS || 0x00 || message
 
 具体源代码如下：
+
 ```cpp
 void getPS(int mLen)
 {
@@ -266,10 +272,10 @@ void getEM()
 
 > 使用公钥 (n, e)
 
-- 填充 
+- 填充
   - 得到公钥中 n 的字节数 k
   - 要求明文 message 字节数 $mLen < k - 11$
-  - 根据解编码的规则，获得 EM 
+  - 根据解编码的规则，获得 EM
 - OS2IP：
   - 对于长度为 k 的 EM 存在如下格式$X_{0} \ X_{1}  \ \cdots \  X_{k - 1}$
   - 得到明文大数 $M = X_{0}*256^{k - 1} + X_{1}*256^{k - 2} + X_{2}*256^{k - 3} + \ \cdots \ + X_{k - 2}*256 + X_{k - 1}$
@@ -281,6 +287,7 @@ void getEM()
   - 输出密文 cryptedText
 
 具体代码如下：
+
 ```cpp
 void encode()
 {
@@ -293,6 +300,7 @@ void encode()
 ```
 
 其中 `OS2IP` 和 `I2OSP` 的具体实现如下：
+
 ```cpp
 /**
  * 将字符串转换为大数
@@ -352,6 +360,7 @@ void I2OSP(char dst[], mpz_t src, unsigned long length)
 - 输出解密结果 message
 
 具体实现代码如下：
+
 ```cpp
 void decode()
 {
@@ -367,6 +376,7 @@ void decode()
 ## C 语言代码
 
 完整代码如下，也可查看同文件下的 rsa.c 代码文件：
+
 ```cpp
 #include <stdio.h>
 #include <gmp.h>
@@ -743,12 +753,14 @@ void clearAll()
 ## 编译运行结果
 
 编译运行平台如下：
+
 ```bash
 root@LAPTOP-QTCGESHO:/mnt/d/blog/work/信息安全/002# uname -a
 Linux LAPTOP-QTCGESHO 4.4.0-19041-Microsoft #488-Microsoft Mon Sep 01 13:43:00 PST 2020 x86_64 x86_64 x86_64 GNU/Linux
 ```
 
 使用 Makefile 进行相关命令的操作，具体代码如下，也可直接查看该文件夹下面的 Makefile 文件：
+
 ```makefile
 GCC := gcc # 编译器
 GMP := gmp # 连接库
@@ -773,7 +785,7 @@ enc: a.out
 	@./a.out ${ENC} ${PUBLICKEYFILE} ${PRIVATEKEYFILE} ${ORIGINFILE} ${ENCRYPTEDFILE}
 
 # 解密
-dec: a.out 
+dec: a.out
 	@./a.out ${DEC} ${PRIVATEKEYFILE} ${ENCRYPTEDFILE} ${DECRYPTEDFILE}
 
 # 一个完整的流程
@@ -782,6 +794,7 @@ test: a.out
 ```
 
 设置 in.txt 文件中的明文如下
+
 ```txt
 This is a test file.
 My name is mijialong.

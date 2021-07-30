@@ -22,62 +22,65 @@
   - [总体架构](#总体架构)
   - [数据结构设计](#数据结构设计)
   - [模块分解](#模块分解)
-  - [C语言代码](#c语言代码)
+  - [C 语言代码](#c-语言代码)
   - [编译运行结果](#编译运行结果)
 
 ## 算法原理总综述
 
-> 本次采用的是 des-ecb 加密算法，因此是对一个8字节的块进行加密，并且需要进行填充
+> 本次采用的是 des-ecb 加密算法，因此是对一个 8 字节的块进行加密，并且需要进行填充
 
 ### 加密
 
 #### 填充
 
 **填充**采用的是 PKCS#5 规范进行字节填充：
-- 当原始明文最后分组不足8字节，则填满至8字节，填充的值为**需要填充的字节牧户**
-- 如果原始明文分组完全，则需要额外增加一个分组，每个字节的值都是0x08
+
+- 当原始明文最后分组不足 8 字节，则填满至 8 字节，填充的值为**需要填充的字节牧户**
+- 如果原始明文分组完全，则需要额外增加一个分组，每个字节的值都是 0x08
 
 #### 子密钥生成
 
-1. 获取给定的64位密钥*K*
-2. 使用**PC-1置换表**进行置换，得到56位的$C_{0}D_{0}$ ，$C_0$和$D_0$分别由置换结果的前28位和后28位组成
-3. 对一下操作进行16次循环，生成子密钥$K_{1} - K_{16}$：
+1. 获取给定的 64 位密钥*K*
+2. 使用**PC-1 置换表**进行置换，得到 56 位的$C_{0}D_{0}$ ，$C_0$和$D_0$分别由置换结果的前 28 位和后 28 位组成
+3. 对一下操作进行 16 次循环，生成子密钥$K_{1} - K_{16}$：
    1. 计算子$C_{i}D_{i}$：$C_{i} = LS_{i}(C_{i - 1})$ ，$D_{i} = LS_{i}(D_{i - 1})$ ，$LS$ 代表循环左移，当$i = 1, 2, 9, 16$时，**循环左移一位**；否则**循环左移两位**
-   2. 对$C_{i}D_{i}$进行**PC-2置换**，压缩成48位，得到对应的子密钥$K_i$
+   2. 对$C_{i}D_{i}$进行**PC-2 置换**，压缩成 48 位，得到对应的子密钥$K_i$
    3. $i = i + 1$
 
 #### 块加密
 
-> 基于上述分组和填充后，对每个8字节的块进行块加密
+> 基于上述分组和填充后，对每个 8 字节的块进行块加密
 
 ##### 初始置换
 
-基于下图对8字节的块（共64位）进行初始置换，途中置换表中数字对应的原始64位的下标编号序列
+基于下图对 8 字节的块（共 64 位）进行初始置换，途中置换表中数字对应的原始 64 位的下标编号序列
 
 ![IP置换表](./IP_TABLE.png)
 
-> 由于该下标编号序列是1到64，因此在直接使用时需要-1，用于匹配数组的下标
+> 由于该下标编号序列是 1 到 64，因此在直接使用时需要-1，用于匹配数组的下标
 
 ##### 迭代
 
-根据初始置换，得到了$L_{0}R_{0}$，以该数组为基础，进行16次迭代，下面列表表示一次迭代：
+根据初始置换，得到了$L_{0}R_{0}$，以该数组为基础，进行 16 次迭代，下面列表表示一次迭代：
+
 - $L_{i} = R_{i - 1}$
 - $R_{i} = L_{i - 1} \bigoplus f(R_{i -1}, K{i})$
 - $i = i + 1$
-- 其中$f$是轮函数，输出一个32位数组；$\bigoplus$是32位二进制串按位**异或**
+- 其中$f$是轮函数，输出一个 32 位数组；$\bigoplus$是 32 位二进制串按位**异或**
 
 ###### 轮函数
 
-> 轮函数接受32位的输入，并且返回一个32位的输出
+> 轮函数接受 32 位的输入，并且返回一个 32 位的输出
 
 具体步骤如下：
-1. 将长度为32位的串 $R_{i - 1}$ 作 **E-扩展**，得到一个48位的串 $E(R_{i - 1})$
-2. 将 $E(R_{i - 1})$ 和长度为48位的子密钥 $K_i$ 作48位二进制串**按位异或**运算，$K_i$ 由密钥 K 生成
-3. 将上一步得到的结果平均分成8个分组，每个分组长度6位。各个分组分别经过8个不同的**S-盒**进行6-4 转换，得到8个长度分别为4位的分组，具体转换操作如下：
-   - S-盒是一类选择函数，用于二进制**6-4转换**。Feistel轮函数使用8个S-盒 $S_1, \cdots, S_8$ ，每个S-盒是一个4行(编号十进制数 0-3)、16列(编号十进制数 0-15) 的二维表，表中每个元素是一个十进制数，取值在 0-15 之间，用于表示一个4位二进制数。
-   - 假设Si 的6位二进制输入为 $b_1b_2b_3b_4b_5b_6$ ，则由 $n = (b_1b_6)_{10}$ 确定行号，由 $m = (b_2b_3b_4b_5)_{10}$ 确定列号，$S_i[n, m]$ 元素的值 的二进制形式即为所要的 $S_i$ 的输出。
-4. 将第3步得到的分组结果顺序连接得到长度为32位的串
-5. 将上一步的结果经过**P-置换**，得到的结果作为轮函数 $f(R_{i-1}, K_i)$ 的最终32位输出。
+
+1. 将长度为 32 位的串 $R_{i - 1}$ 作 **E-扩展**，得到一个 48 位的串 $E(R_{i - 1})$
+2. 将 $E(R_{i - 1})$ 和长度为 48 位的子密钥 $K_i$ 作 48 位二进制串**按位异或**运算，$K_i$ 由密钥 K 生成
+3. 将上一步得到的结果平均分成 8 个分组，每个分组长度 6 位。各个分组分别经过 8 个不同的**S-盒**进行 6-4 转换，得到 8 个长度分别为 4 位的分组，具体转换操作如下：
+   - S-盒是一类选择函数，用于二进制**6-4 转换**。Feistel 轮函数使用 8 个 S-盒 $S_1, \cdots, S_8$ ，每个 S-盒是一个 4 行(编号十进制数 0-3)、16 列(编号十进制数 0-15) 的二维表，表中每个元素是一个十进制数，取值在 0-15 之间，用于表示一个 4 位二进制数。
+   - 假设 Si 的 6 位二进制输入为 $b_1b_2b_3b_4b_5b_6$ ，则由 $n = (b_1b_6)_{10}$ 确定行号，由 $m = (b_2b_3b_4b_5)_{10}$ 确定列号，$S_i[n, m]$ 元素的值 的二进制形式即为所要的 $S_i$ 的输出。
+4. 将第 3 步得到的分组结果顺序连接得到长度为 32 位的串
+5. 将上一步的结果经过**P-置换**，得到的结果作为轮函数 $f(R_{i-1}, K_i)$ 的最终 32 位输出。
 
 S-盒如图：
 
@@ -107,26 +110,27 @@ S-盒如图：
   - 获取密钥，并且生成子密钥
   - 根据参数加载功能：
     - 加密功能（需要设置一个 flag 判断是否已经补全）：
-      1. 以8字节为单位，进行文件块读取，如果需要补全，则 `flag = true`
+      1. 以 8 字节为单位，进行文件块读取，如果需要补全，则 `flag = true`
       2. 对上面获取的块进行加密：
          1. 初始置换
-         2. 使用轮函数进行16次迭代
+         2. 使用轮函数进行 16 次迭代
          3. 交换置换
-         4. IP逆置换
+         4. IP 逆置换
          5. 输出
-      3. 如果 `flag == false` ，那么需要进行新增一个空块，进行补全，并按照第2步进行加密，输出；反之则不用
+      3. 如果 `flag == false` ，那么需要进行新增一个空块，进行补全，并按照第 2 步进行加密，输出；反之则不用
     - 解密功能：
-      1. 以8字节为单位，进行文件块读取
+      1. 以 8 字节为单位，进行文件块读取
       2. 对上面读取的块进行解密：
          1. 初始置换
-         2. 使用轮函数进行16次迭代
+         2. 使用轮函数进行 16 次迭代
          3. 交换置换
-         4. IP逆置换
+         4. IP 逆置换
          5. 判断填充用于确定输出
 
 ## 数据结构设计
 
 相关数据类型定义如下：
+
 ```cpp
 #define BLOCK64 64         // 01位块长度
 #define BLOCK8 9           // 8字节明文块长度，由于字符串限制，必须+1
@@ -158,6 +162,7 @@ FILE *readFile; // 读取的文件
 ## 模块分解
 
 具体函数如下：
+
 ```cpp
 /**
  * 通过密钥生成子密钥，总共生成16个
@@ -215,9 +220,10 @@ void decode();
 int main(); // 主函数
 ```
 
-## C语言代码
+## C 语言代码
 
 完整代码如下：
+
 ```cpp
 #include <stdio.h>
 #include <stdlib.h>
@@ -737,11 +743,13 @@ void decodeBlock()
 ## 编译运行结果
 
 编译运行环境为 WSL ：
+
 ```bash
 Linux LAPTOP-QTCGESHO 4.4.0-19041-Microsoft #488-Microsoft Mon Sep 01 13:43:00 PST 2020 x86_64 x86_64 x86_64 GNU/Linux
 ```
 
 使用 makefile 设置了相关的命令，文件代码如下,使用 openssl 进行加密解密的对照：
+
 ```makefile
 KEY = a1b2c3d4e5f6f7e8 # 密钥，请务必保证是64位
 IN := ./in.txt # 输入的 txt 文件名
@@ -773,12 +781,12 @@ dec:
 
 # 使用 openssl 进行加密操作
 senc:
-	@openssl ${ENCMODE} -K ${KEY} -in ${IN} -out ${SENC} 
+	@openssl ${ENCMODE} -K ${KEY} -in ${IN} -out ${SENC}
 	@xxd ${SENC}
 
 # 使用 openssl 进行解密操作
 sdec:
-	@openssl ${DECMODE} -K ${KEY} -in ${SENC} -out ${SDEC} 
+	@openssl ${DECMODE} -K ${KEY} -in ${SENC} -out ${SDEC}
 	@xxd ${SDEC}
 
 # 比较 C 代码和 openssl 加密结果
@@ -797,15 +805,16 @@ clean:
 ```
 
 设置明文如下：
+
 ```txt
-*Astronomy* in Elizabethan times was much closer to what we would nowadays term astrology. 
-It was not yet weighted down with knowledge of what the planets and stars actually are, as modern day astronomy is. 
-There was a widespread belief that the stars, in their various conjunctions, had an important and direct influence on the life of humans, both on individuals, and on social institutions. 
-See the sonnet by Sidney, given at the bottom of the page. 
-He calls those who consider the stars to shine merely to spangle the night 'dusty wits', for to him their importance was much greater. 
-They were an importance influence in human lives. 
-Although his sonnet, like this one, by its conclusion is somewhat tongue in cheek. 
-(Note that Sidney uses the term astrology. He also reads Stellas's eyes as if they were stars). 
+*Astronomy* in Elizabethan times was much closer to what we would nowadays term astrology.
+It was not yet weighted down with knowledge of what the planets and stars actually are, as modern day astronomy is.
+There was a widespread belief that the stars, in their various conjunctions, had an important and direct influence on the life of humans, both on individuals, and on social institutions.
+See the sonnet by Sidney, given at the bottom of the page.
+He calls those who consider the stars to shine merely to spangle the night 'dusty wits', for to him their importance was much greater.
+They were an importance influence in human lives.
+Although his sonnet, like this one, by its conclusion is somewhat tongue in cheek.
+(Note that Sidney uses the term astrology. He also reads Stellas's eyes as if they were stars).
 The poet here claims to 'have Astronomy', i.e he understands it as a science, and then he proceeds to tell us how his knowledge differs from that of the traditional astrologer (lines 3-8).
 We tend to think of ourselves as a more rational age, but a recent president of the United States, Ronald Reagan, relied on his wife's astrologer to forecast for him propitious days for work and policy decisions.
 ```

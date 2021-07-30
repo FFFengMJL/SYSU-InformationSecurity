@@ -4,7 +4,18 @@
 - 计算机学院
 - 18342075
 
-[TOC]
+- [IPSec 传输模式下 ESP 报文的装包与拆包过程](#ipsec-传输模式下-esp-报文的装包与拆包过程)
+  - [什么是 IPsec](#什么是-ipsec)
+  - [加密方式](#加密方式)
+  - [什么是 SA(Security Associations) 安全关联](#什么是-sasecurity-associations-安全关联)
+  - [完整流程](#完整流程)
+    - [装包过程](#装包过程)
+      - [1. 在原 IP 报文末尾添加 ESP trailer (尾部/挂载) 信息。](#1-在原-ip-报文末尾添加-esp-trailer-尾部挂载-信息)
+      - [2. 加密封装。](#2-加密封装)
+      - [3. 为第 2 步得到的加密数据添加 ESP header。](#3-为第-2-步得到的加密数据添加-esp-header)
+      - [4. 附加完整性度量结果 (ICV，Integrity check value)。](#4-附加完整性度量结果-icvintegrity-check-value)
+      - [5. 加上新的 IP header 构成 IPsec 报文。](#5-加上新的-ip-header-构成-ipsec-报文)
+    - [拆包流程](#拆包流程)
 
 ## 什么是 IPsec
 
